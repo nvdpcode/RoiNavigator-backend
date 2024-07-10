@@ -24,7 +24,7 @@ const addProductEnvDetails = async (req, res) => {
             });
 
             console.log('ProductEnvDetails updated:', existingDetails);
-            return res.status(200).json({ message: 'ProductEnvDetails updated successfully' });
+            return res.status(200).json({ message: 'Environment information successfully saved' });
         } else {
             const newDetails = await ProductEnvDetails.create({
                 roiId: roiId,
@@ -43,12 +43,12 @@ const addProductEnvDetails = async (req, res) => {
                 hourlyPrice: hourlyPrice
             });
 
-            console.log('New ProductEnvDetails created:', newDetails);
-            return res.status(200).json({ message: 'ProductEnvDetails created successfully' });
+            console.log('Environment information successfully saved');
+            return res.status(200).json({ message: 'Environment information successfully saved' });
         }
     } catch (error) {
         console.error('Error creating/updating ProductEnvDetails:', error);
-        return res.status(500).json({ error: 'Error creating/updating ProductEnvDetails' });
+        return res.status(500).json({ error: 'Error creating/updating Environment information' });
     }
 };
 
@@ -77,12 +77,12 @@ const addProductAddidtionals = async (req, res) => {
                 waitTime: waitTime
             });
 
-            console.log('New ProductAdditionalDetails created:', newDetails);
-            return res.status(200).json({ message: 'ProductAdditionalDetails created successfully' });
+            console.log('Additional information successfully saved');
+            return res.status(200).json({ message: 'Additional information successfully saved' });
         }
     } catch (error) {
         console.error('Error creating/updating ProductAdditionalDetails:', error);
-        return res.status(500).json({ error: 'Error creating/updating ProductAdditionalDetails' });
+        return res.status(500).json({ error: 'Error creating/updating Additional information' });
     }
 };
 
@@ -98,7 +98,7 @@ const addProductPhaseDetails = async (req, res) => {
                 userProductivity: userProductivity
             });
 
-            console.log('ProductPhaseDetails updated:', existingDetails);
+            console.log('ProductPhaseDetails updated');
             return res.status(200).json({ message: 'ProductPhaseDetails updated successfully' });
         } else {
             const newDetails = await ProductPhase.create({
@@ -109,12 +109,12 @@ const addProductPhaseDetails = async (req, res) => {
                 userProductivity: userProductivity
             });
 
-            console.log('New ProductPhaseDetails created:', newDetails);
-            return res.status(200).json({ message: 'ProductPhaseDetails created successfully' });
+            console.log('Phase delivery successfully saved');
+            return res.status(200).json({ message: 'Phase delivery successfully saved' });
         }
     } catch (error) {
         console.error('Error creating/updating ProductPhaseDetails:', error);
-        return res.status(500).json({ error: 'Error creating/updating ProductPhaseDetails' });
+        return res.status(500).json({ error: 'Error creating/updating Phase delivery' });
     }
 };
 

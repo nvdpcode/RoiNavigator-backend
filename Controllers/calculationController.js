@@ -5,7 +5,16 @@ const Licence = require("../Models/licenceDetailsModel");
 const CalculationDesktopSupport = require("../Models/calculationDeskSupportModel");
 const CalculationDeviceRefresh = require("../Models/calculationDeviceRefreshModel");
 const LicenceCalculations = require("../Models/calculationLicenceModel");
-const UserProductivityCalculations = require("../Models/calculationUserProductivityModel")
+const UserProductivityCalculations = require("../Models/calculationUserProductivityModel");
+const CalculationLicence = require('../Models/calculationLicenceModel');
+const CalcUserProductivity = require('../Models/calculationUserProductivityModel');
+
+
+function deviceRefreshAlgo(year, cycle, totalEPs, reduction) {
+    const max0YearMinusCycle = Math.max(0, year - cycle);
+    const innerTerm = Math.pow(reduction, year) + Math.pow(reduction, max0YearMinusCycle) * (1 - reduction) * max0YearMinusCycle;
+    return (totalEPs / cycle) * (1 - innerTerm);
+}
 
 const addDate = (date, value) => {
     const newDate = new Date(date);
@@ -21,13 +30,18 @@ const createDesktopTasks = (levels, yearCalc, tickets, costs, reductionFactors) 
     ]);
 };
 
-const createDeviceRefreshTasks = (yearCalc, noOfDevices, costPerDevice, reductionFact) => {
-    return Array.from({ length: 4 }, (_, i) => ({
-        yearDate: yearCalc[`year${i + 1}`],
-        noOfDevices,
-        costPerDevice,
-        reductionFact
-    }));
+const createDeviceRefreshTasks = (yearCalc, noOfDevices, costPerDevice, reductionFact,cycle, totalEPs) => {
+    return Array.from({ length: 5 }, (_, i) => {
+        const year = i+1;
+        const noOfDevicesAlluvio = deviceRefreshAlgo(year, cycle, totalEPs, (1-(reductionFact / 100)));
+        return {
+            yearDate: yearCalc[`year${year}`],
+            noOfDevices: noOfDevices,
+            noOfDevicesAlluvio,
+            costPerDevice,
+            reductionFact
+        };
+    });
 };
 
 const deskSupportCalculations = async (roiId, { yearDate, level, noOfTickets, costPerTicket, reductionFact }) => {
@@ -63,11 +77,10 @@ const deskSupportCalculations = async (roiId, { yearDate, level, noOfTickets, co
     }
 };
 
-const deviceRefreshCalculations = async (roiId, { yearDate, noOfDevices, costPerDevice, reductionFact }) => {
-    const noOfDevicesAlluvino = noOfDevices * (reductionFact / 100);
+const deviceRefreshCalculations = async (roiId, { yearDate, noOfDevices,noOfDevicesAlluvio, costPerDevice, reductionFact }) => {
     const costPerDeviceAlluvino = costPerDevice;
     const costPerAnnum = noOfDevices * costPerDevice;
-    const costPerAnnumAlluvino = noOfDevicesAlluvino * costPerDeviceAlluvino;
+    const costPerAnnumAlluvino = noOfDevicesAlluvio * costPerDeviceAlluvino;
 
     try {
         const existingRecord = await CalculationDeviceRefresh.findOne({ where: { roiId, Date:yearDate } });
@@ -82,7 +95,7 @@ const deviceRefreshCalculations = async (roiId, { yearDate, noOfDevices, costPer
             noOfDevices:Math.ceil(noOfDevices),
             cost: costPerDevice,
             costPerAnnum,
-            noOfDevicesAlluvino:Math.ceil(noOfDevicesAlluvino),
+            noOfDevicesAlluvino:Math.floor(noOfDevicesAlluvio),
             costAlluvino: costPerDeviceAlluvino,
             costPerAnnumAlluvino,
             savingsPerAnnum: costPerAnnum - costPerAnnumAlluvino
@@ -175,7 +188,8 @@ const calculation = async (req, res) => {
                 year1: addDate(Year, { months: Number(prodAddPhase.deviceRefresh) }),
                 year2: addDate(Year, { months: Number(prodAddPhase.deviceRefresh), years: 1 }),
                 year3: addDate(Year, { months: Number(prodAddPhase.deviceRefresh), years: 2 }),
-                year4: addDate(Year, { months: Number(prodAddPhase.deviceRefresh), years: 3 })
+                year4: addDate(Year, { months: Number(prodAddPhase.deviceRefresh), years: 3 }),
+                year5: addDate(Year, { months: Number(prodAddPhase.deviceRefresh), years: 4 })
             },
             softwareLicence:{
                 year: addDate(Year, { months: Number(prodAddPhase.softwareLicence) }),
@@ -195,7 +209,7 @@ const calculation = async (req, res) => {
                 subsYear: 100 - Number(prodAddDetails.desktopSupportTickets.subsYear)
             },
             refresh: {
-                eachYear: 100 - Number(prodAddDetails.refresh)
+                eachYear: 100-Number(prodAddDetails.refresh)
             },
             software: {
                 eachYear: 100 - Number(prodAddDetails.software)
@@ -230,9 +244,11 @@ const calculation = async (req, res) => {
         // For Device Refresh
         const noOfDevices = Number(prodAddEnv.hardwareRefresh) * (12 - phase.deviceRefresh) / 12;
         const costPerDevice = Number(prodAddEnv.cost);
-        const refreshTasks = createDeviceRefreshTasks(yearCalc.Refresh, noOfDevices, costPerDevice, reductionFact.refresh.eachYear);
-
-
+        const cycle = 4;
+        const  totalEPs = licenceDetails.eps
+        //const refreshTasks = createDeviceRefreshTasks(yearCalc.Refresh, cycle, totalEPs,costPerDevice, reductionFact.refresh.eachYear);
+        const refreshTasks = createDeviceRefreshTasks(yearCalc.Refresh, noOfDevices, costPerDevice, reductionFact.refresh.eachYear,cycle, totalEPs);
+    
         //For User Productivity
         const waitTime = (250*(12 - phase.userProductivity)*(licenceDetails.employees)*(prodAddEnv.avgTimeSpent)*(prodAddEnv.waitTime))/10000
 
@@ -257,4 +273,108 @@ const calculation = async (req, res) => {
     }
 };
 
-module.exports = { calculation };
+function filterByConditions(array, conditions) {
+    return array.filter(item => Object.keys(conditions).every(key => item[key] === conditions[key]));
+}
+
+
+function sortByDate(array) {
+    return array.sort((a, b) => new Date(a.date) - new Date(b.date));
+}
+
+
+function mapAndSortData(data, level, fields) {
+    return sortByDate(filterByConditions(data, { level }).map(item => {
+        let mappedItem = { date: item.Date };
+        fields.forEach(field => {
+            mappedItem[field.key] = item[field.value];
+        });
+        return mappedItem;
+    }));
+}
+
+function mapDeviceData(data, fields) {
+    return sortByDate(data.map(item => {
+        let mappedItem = { date: item.Date };
+        fields.forEach(field => {
+            mappedItem[field.key] = item[field.value];
+        });
+        return mappedItem;
+    }));
+}
+
+const getCalculations = async (req, res) => {
+    try {
+        const { roiId } = req.body;
+        const [deskSupport, deviceRefresh, licence, userProductivity] = await Promise.all([
+            CalculationDesktopSupport.findAll({ where: { roiId } }),
+            CalculationDeviceRefresh.findAll({ where: { roiId } }),
+            CalculationLicence.findAll({ where: { roiId } }),
+            CalcUserProductivity.findAll({ where: { roiId } })
+        ]);
+
+        const withoutAlluvioFields = [
+            { key: 'noOfTickets', value: 'noOfTickets' },
+            { key: 'costPerTicket', value: 'cost' },
+            { key: 'costPerAnnum', value: 'costPerAnnum' }
+        ];
+
+        const withAlluvioFields = [
+            { key: 'noOfTickets', value: 'noOfTicketsAlluvino' },
+            { key: 'costPerTicket', value: 'costAlluvino' },
+            { key: 'costPerAnnum', value: 'costPerAnnumAlluvino' }
+        ];
+
+        const savingsFields = [
+            { key: 'savingsPerAnnum', value: 'savingsPerAnnum' }
+        ];
+
+        const deviceFields = [
+            { key: 'noOfDevices', value: 'noOfDevices' },
+            { key: 'costPerDevice', value: 'cost' },
+            { key: 'costPerAnnum', value: 'costPerAnnum' }
+        ];
+
+        const deviceAlluvioFields = [
+            { key: 'noOfDevices', value: 'noOfDevicesAlluvino' },
+            { key: 'costPerDevice', value: 'costAlluvino' },
+            { key: 'costPerAnnum', value: 'costPerAnnumAlluvino' }
+        ];
+
+        const withoutAlluvio = {
+            L1DesktopSupport: mapAndSortData(deskSupport, 1, withoutAlluvioFields),
+            L2DesktopSupport: mapAndSortData(deskSupport, 2, withoutAlluvioFields),
+            L3DesktopSupport: mapAndSortData(deskSupport, 3, withoutAlluvioFields),
+            DeviceRefresh: mapDeviceData(deviceRefresh, deviceFields),
+            softwareLicence: mapDeviceData(licence, deviceFields),
+            userProductivity: mapDeviceData(userProductivity, deviceFields)
+        };
+
+        const withAlluvio = {
+            L1DesktopSupport: mapAndSortData(deskSupport, 1, withAlluvioFields),
+            L2DesktopSupport: mapAndSortData(deskSupport, 2, withAlluvioFields),
+            L3DesktopSupport: mapAndSortData(deskSupport, 3, withAlluvioFields),
+            DeviceRefresh: mapDeviceData(deviceRefresh, deviceAlluvioFields),
+            softwareLicence: mapDeviceData(licence, deviceAlluvioFields),
+            userProductivity: mapDeviceData(userProductivity, deviceAlluvioFields)
+        };
+
+        const savings = {
+            L1DesktopSupport: mapAndSortData(deskSupport, 1, savingsFields),
+            L2DesktopSupport: mapAndSortData(deskSupport, 2, savingsFields),
+            L3DesktopSupport: mapAndSortData(deskSupport, 3, savingsFields),
+            DeviceRefresh: mapDeviceData(deviceRefresh, savingsFields),
+            softwareLicence: mapDeviceData(licence, savingsFields),
+            userProductivity: mapDeviceData(userProductivity, savingsFields)
+        };
+
+        return res.status(200).json({ withAlluvio, withoutAlluvio, savings });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+
+
+module.exports = { calculation,getCalculations };

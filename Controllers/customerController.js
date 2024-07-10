@@ -11,8 +11,8 @@ const create = async (req, res) => {
       }
       const customer = await Customer.create({  name,contactName});
       const roi = await Roi.create({name:roiName,custId:customer.dataValues.custId})
-      await Licence.create({custId:customer.dataValues.custId,roiId:roi.dataValues.id,employees,eps,date,licenceTerm,licencePrice,addonPrice,impleandTraining,residentPs})
-      return res.status(200).json({ message: 'Customer created successfully' });
+      await Licence.create({custId:customer.dataValues.custId,roiId:roi.dataValues.id,employees,eps:employees*eps,date,licenceTerm,licencePrice,addonPrice,impleandTraining,residentPs})
+      return res.status(200).json({ message: 'Customer information successfully saved',roiId:roi.id });
     } catch (error) {
       console.error('Error creating Customer:', error);
       return res.status(500).json({ error: 'Error creating Customer' });

@@ -8,5 +8,7 @@ router.post('/addEnv',productController.addProductEnvDetails);
 router.post('/additionals',productController.addProductAddidtionals)
 router.post('/phase',productController.addProductPhaseDetails)
 router.get('/calculation',calculationController.calculation)
+router.get('/calcDetails',calculationController.getCalculations)
+
 
 module.exports = router
