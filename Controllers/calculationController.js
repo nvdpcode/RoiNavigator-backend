@@ -313,64 +313,115 @@ const getCalculations = async (req, res) => {
             CalcUserProductivity.findAll({ where: { roiId } })
         ]);
 
-        const withoutAlluvioFields = [
-            { key: 'noOfTickets', value: 'noOfTickets' },
-            { key: 'costPerTicket', value: 'cost' },
-            { key: 'costPerAnnum', value: 'costPerAnnum' }
-        ];
-
-        const withAlluvioFields = [
-            { key: 'noOfTickets', value: 'noOfTicketsAlluvino' },
-            { key: 'costPerTicket', value: 'costAlluvino' },
-            { key: 'costPerAnnum', value: 'costPerAnnumAlluvino' }
-        ];
-
-        const savingsFields = [
-            { key: 'savingsPerAnnum', value: 'savingsPerAnnum' }
-        ];
-
-        const deviceFields = [
-            { key: 'noOfDevices', value: 'noOfDevices' },
-            { key: 'costPerDevice', value: 'cost' },
-            { key: 'costPerAnnum', value: 'costPerAnnum' }
-        ];
-
-        const deviceAlluvioFields = [
-            { key: 'noOfDevices', value: 'noOfDevicesAlluvino' },
-            { key: 'costPerDevice', value: 'costAlluvino' },
-            { key: 'costPerAnnum', value: 'costPerAnnumAlluvino' }
-        ];
-
         const withoutAlluvio = {
-            L1DesktopSupport: mapAndSortData(deskSupport, 1, withoutAlluvioFields),
-            L2DesktopSupport: mapAndSortData(deskSupport, 2, withoutAlluvioFields),
-            L3DesktopSupport: mapAndSortData(deskSupport, 3, withoutAlluvioFields),
-            DeviceRefresh: mapDeviceData(deviceRefresh, deviceFields),
-            softwareLicence: mapDeviceData(licence, deviceFields),
-            userProductivity: mapDeviceData(userProductivity, deviceFields)
+            L1DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 1 }).map(item => ({
+                date: item.Date,
+                noOfTickets: item.noOfTickets,
+                costPerTicket: item.cost,
+                costPerAnnum: item.costPerAnnum,
+            }))),
+            L2DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 2 }).map(item => ({
+                date: item.Date,
+                noOfTickets: item.noOfTickets,
+                costPerTicket: item.cost,
+                costPerAnnum: item.costPerAnnum,
+            }))),
+            L3DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 3 }).map(item => ({
+                date: item.Date,
+                noOfTickets: item.noOfTickets,
+                costPerTicket: item.cost,
+                costPerAnnum: item.costPerAnnum,
+            }))),
+            DeviceRefresh: sortByDate(deviceRefresh.map(item => ({
+                date: item.Date,
+                noOfDevices: item.noOfDevices,
+                costPerDevice: item.cost,
+                costPerAnnum: item.costPerAnnum,
+            }))),
+            softwareLicence:sortByDate(licence.map(item => ({
+                date: item.Date,
+                noOfUsers: item.noOfUsers,
+                costOfSoftware: item.costOfSoftware,
+                costPerAnnum: item.costPerAnnum
+            }))),
+            userProductivity:sortByDate(userProductivity.map(item => ({
+                date: item.Date,
+                waitTimeHrs: item.waitTimeHrs,
+                costPerHour: item.costPerHour,
+                costPerAnnum: item.costPerAnnum
+                }))),
         };
-
         const withAlluvio = {
-            L1DesktopSupport: mapAndSortData(deskSupport, 1, withAlluvioFields),
-            L2DesktopSupport: mapAndSortData(deskSupport, 2, withAlluvioFields),
-            L3DesktopSupport: mapAndSortData(deskSupport, 3, withAlluvioFields),
-            DeviceRefresh: mapDeviceData(deviceRefresh, deviceAlluvioFields),
-            softwareLicence: mapDeviceData(licence, deviceAlluvioFields),
-            userProductivity: mapDeviceData(userProductivity, deviceAlluvioFields)
+            L1DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 1 }).map(item => ({
+                date: item.Date,
+                noOfTickets: item.noOfTicketsAlluvino,
+                costPerTicket: item.costAlluvino,
+                costPerAnnum: item.costPerAnnumAlluvino,
+            }))),
+            L2DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 2 }).map(item => ({
+                date: item.Date,
+                noOfTickets: item.noOfTicketsAlluvino,
+                costPerTicket: item.costAlluvino,
+                costPerAnnum: item.costPerAnnumAlluvino,
+            }))),
+            L3DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 3 }).map(item => ({
+                date: item.Date,
+                noOfTickets: item.noOfTicketsAlluvino,
+                costPerTicket: item.costAlluvino,
+                costPerAnnum: item.costPerAnnumAlluvino,
+            }))),
+            DeviceRefresh: sortByDate(deviceRefresh.map(item => ({
+                date: item.Date,
+                noOfDevices: item.noOfDevicesAlluvino,
+                costPerDevice: item.costAlluvino,
+                costPerAnnum: item.costPerAnnumAlluvino,
+            }))),
+            softwareLicence:sortByDate(licence.map(item => ({
+                date: item.Date,
+                noOfUsers: item.noOfUsers,
+                costOfSoftware: item.costOfSoftwareAlluvio,
+                costPerAnnum: item.costPerAnnumAlluvino
+            }))),
+            userProductivity:sortByDate(userProductivity.map(item => ({
+                date: item.Date,
+                waitTimeHrs: item.waitTimeHrsAlluvio,
+                costPerHour: item.costPerHourAlluvio,
+                costPerAnnum: item.costPerAnnumAlluvio
+                }))),
         };
 
         const savings = {
-            L1DesktopSupport: mapAndSortData(deskSupport, 1, savingsFields),
-            L2DesktopSupport: mapAndSortData(deskSupport, 2, savingsFields),
-            L3DesktopSupport: mapAndSortData(deskSupport, 3, savingsFields),
-            DeviceRefresh: mapDeviceData(deviceRefresh, savingsFields),
-            softwareLicence: mapDeviceData(licence, savingsFields),
-            userProductivity: mapDeviceData(userProductivity, savingsFields)
+            L1DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 1 }).map(item => ({
+                date: item.Date,
+                savingsPerAnnum:item.savingsPerAnnum
+            }))),
+            L2DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 2 }).map(item => ({
+                date: item.Date,
+                savingsPerAnnum:item.savingsPerAnnum
+            }))),
+            L3DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 3 }).map(item => ({
+                date: item.Date,
+                savingsPerAnnum:item.savingsPerAnnum
+            }))),
+            DeviceRefresh: sortByDate(deviceRefresh.map(item => ({
+                date: item.Date,
+                savingsPerAnnum: item.savingsPerAnnum
+            }))),
+            softwareLicence:sortByDate(licence.map(item => ({
+                date: item.Date,
+                savingsPerAnnum: item.savingsPerAnnum
+            }))),
+            userProductivity:sortByDate(userProductivity.map(item => ({
+                date: item.Date,
+                savingsPerAnnum: item.savingsPerAnnum
+                }))),
         };
 
-        return res.status(200).json({ withAlluvio, withoutAlluvio, savings });
+
+
+        return res.json({withAlluvio:withAlluvio,withoutAlluvio,savings:savings});
     } catch (error) {
-        console.log(error);
+        console.log(error)
         return res.status(500).json({ error: 'Internal server error' });
     }
 }
