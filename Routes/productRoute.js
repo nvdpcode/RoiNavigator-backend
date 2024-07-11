@@ -9,6 +9,7 @@ router.post('/additionals',productController.addProductAddidtionals)
 router.post('/phase',productController.addProductPhaseDetails)
 router.post('/calculation',calculationController.calculation)
 router.post('/calcDetails',calculationController.getCalculations)
+router.post('/calcTimeline',calculationController.calculationTimeline)
 
 
 module.exports = router

@@ -8,6 +8,8 @@ const LicenceCalculations = require("../Models/calculationLicenceModel");
 const UserProductivityCalculations = require("../Models/calculationUserProductivityModel");
 const CalculationLicence = require('../Models/calculationLicenceModel');
 const CalcUserProductivity = require('../Models/calculationUserProductivityModel');
+const Timeline = require("../Models/timelineModel")
+const {sequelize} = require('../dbConfig');
 
 
 function deviceRefreshAlgo(year, cycle, totalEPs, reduction) {
@@ -24,21 +26,62 @@ const addDate = (date, value) => {
 };
 
 const createDesktopTasks = (levels, yearCalc, tickets, costs, reductionFactors) => {
-    return levels.flatMap((level, index) => [
-        { level, yearDate: yearCalc.year1, noOfTickets: tickets[index], costPerTicket: costs[index], reductionFact: reductionFactors.firstYear },
-        { level, yearDate: yearCalc.year2, noOfTickets: tickets[index], costPerTicket: costs[index], reductionFact: reductionFactors.subsYear }
-    ]);
+    const tasks = [];
+    Object.keys(yearCalc.Desktop).forEach((yearKey, index) => {
+        const yearDate = yearCalc.Desktop[yearKey];
+        levels.forEach((level, levelIndex) => {
+            const reductionFact = index === 0 ? reductionFactors.firstYear : reductionFactors.subsYear;  
+            tasks.push({
+                level,
+                yearDate,
+                noOfTickets: tickets[levelIndex],
+                costPerTicket: costs[levelIndex],
+                reductionFact
+            });
+        });
+    });
+
+    return tasks;
 };
 
-const createDeviceRefreshTasks = (yearCalc, noOfDevices, costPerDevice, reductionFact,cycle, totalEPs) => {
-    return Array.from({ length: 5 }, (_, i) => {
-        const year = i+1;
-        const noOfDevicesAlluvio = deviceRefreshAlgo(year, cycle, totalEPs, (1-(reductionFact / 100)));
+
+const createDeviceRefreshTasks = (yearCalc, noOfDevices, costPerDevice, reductionFact, cycle, totalEPs) => {
+    const numYears = Object.keys(yearCalc.Refresh).length; // Get the number of years in yearCalc.Desktop
+
+    return Array.from({ length: numYears }, (_, i) => {
+        const year = i + 1;
+        const noOfDevicesAlluvio = deviceRefreshAlgo(year, cycle, totalEPs, (1 - (reductionFact / 100)));
         return {
-            yearDate: yearCalc[`year${year}`],
-            noOfDevices: noOfDevices,
+            yearDate: yearCalc.Refresh[`year${year}`], // Access the year date dynamically
+            noOfDevices,
             noOfDevicesAlluvio,
             costPerDevice,
+            reductionFact
+        };
+    });
+};
+
+ const createLicenceCalculationTasks = (yearCalc, noOfEmployees, costPerUser, reductionFact) => {
+    const numYears = Object.keys(yearCalc.softwareLicence).length; // Get the number of years in yearCalc.Desktop
+    return Array.from({ length: numYears }, (_, i) => {
+        const year = i + 1;
+        return {
+            yearDate: yearCalc.Refresh[`year${year}`], // Access the year date dynamically
+            noOfUsers:noOfEmployees,
+            costOfSoftware:costPerUser,
+            reductionFact
+        };
+    });
+};
+
+const createUserProductivityTasks = (yearCalc, waitTime, costPerHour, reductionFact) => {
+    const numYears = Object.keys(yearCalc.userProductivity).length; // Get the number of years in yearCalc.Desktop
+    return Array.from({ length: numYears }, (_, i) => {
+        const year = i + 1;
+        return {
+            yearDate: yearCalc.userProductivity[`year${year}`], // Access the year date dynamically
+            waitTimeHrs:waitTime,
+            costPerHour,
             reductionFact
         };
     });
@@ -51,12 +94,12 @@ const deskSupportCalculations = async (roiId, { yearDate, level, noOfTickets, co
     const costPerAnnumAlluvino = noOfTicketsAlluvino * costPerTicketAlluvino;
 
     try {
-        const existingRecord = await CalculationDesktopSupport.findOne({ where: { roiId, level } });
+        const existingRecord = await CalculationDesktopSupport.findOne({ where: { roiId, Date:yearDate } });
         if (existingRecord) {
             console.log(`Record with roiId ${roiId} and level ${level} already exists. Skipping creation.`);
             return true;
         }
-
+        const transaction = await sequelize.transaction();
         await CalculationDesktopSupport.create({
             roiId,
             Date: yearDate,
@@ -68,11 +111,12 @@ const deskSupportCalculations = async (roiId, { yearDate, level, noOfTickets, co
             costAlluvino: costPerTicketAlluvino,
             costPerAnnumAlluvino,
             savingsPerAnnum: costPerAnnum - costPerAnnumAlluvino
-        });
-
+        },{transaction});
+        await transaction.commit();
         return true;
     } catch (error) {
         console.error('Error creating CalculationDesktopSupport:', error);
+        await transaction.rollback();
         return false;
     }
 };
@@ -89,6 +133,7 @@ const deviceRefreshCalculations = async (roiId, { yearDate, noOfDevices,noOfDevi
             return true;
         }
 
+        const transaction = await sequelize.transaction();
         await CalculationDeviceRefresh.create({
             roiId,
             Date: yearDate,
@@ -99,15 +144,17 @@ const deviceRefreshCalculations = async (roiId, { yearDate, noOfDevices,noOfDevi
             costAlluvino: costPerDeviceAlluvino,
             costPerAnnumAlluvino,
             savingsPerAnnum: costPerAnnum - costPerAnnumAlluvino
-        });
+        },{transaction});
+        await transaction.commit();
         return true;
     } catch (error) {
+        await transaction.rollback();
         console.error('Error creating CalculationDeviceRefresh:', error);
         return false;
     }
 };
 
-const licenceCalculations = async (roiId,  yearDate, noOfUsers, costOfSoftware, reductionFact ) => {
+const licenceCalculations = async (roiId,{ yearDate, noOfUsers, costOfSoftware, reductionFact} ) => {
     const costPerAnnum = noOfUsers * costOfSoftware;
     const costOfSoftwareAlluvio = costOfSoftware * (reductionFact / 100);
     const costPerAnnumAlluvino = noOfUsers * costOfSoftwareAlluvio
@@ -115,10 +162,11 @@ const licenceCalculations = async (roiId,  yearDate, noOfUsers, costOfSoftware, 
     try {
         const existingRecord = await LicenceCalculations.findOne({ where: { roiId, Date:yearDate } });
         if (existingRecord) {
-            console.log(`Record with roiId ${roiId} already exists. Skipping creation for refresh.`);
+            console.log(`Record with roiId ${roiId} already exists. Skipping creation for Licence.`);
             return true;
         }
 
+        const transaction = await sequelize.transaction();
         await LicenceCalculations.create({
             roiId,
             Date: yearDate,
@@ -128,26 +176,31 @@ const licenceCalculations = async (roiId,  yearDate, noOfUsers, costOfSoftware, 
             costPerAnnum:costPerAnnum,
             costPerAnnumAlluvino,
             savingsPerAnnum: costPerAnnum - costPerAnnumAlluvino
-        });
+        },{transaction});
+        
+        await transaction.commit();
         return true;
     } catch (error) {
+        await transaction.rollback();
         console.error('Error creating CalculationDeviceRefresh:', error);
         return false;
     }
 };
 
-const userProductivityCalculations = async (roiId,  yearDate, waitTimeHrs, costPerHour, reductionFact ) => {
+const userProductivityCalculations = async (roiId,{  yearDate, waitTimeHrs, costPerHour, reductionFact} ) => {
     const costPerAnnum = waitTimeHrs* costPerHour;
     const waitTimeHrsAlluvio = reductionFact*waitTimeHrs/100
     const costPerAnnumAlluvino = waitTimeHrsAlluvio*costPerHour;
 
+
     try {
         const existingRecord = await UserProductivityCalculations.findOne({ where: { roiId, Date:yearDate } });
         if (existingRecord) {
-            console.log(`Record with roiId ${roiId} already exists. Skipping creation for refresh.`);
+            console.log(`Record with roiId ${roiId} already exists. Skipping creation for userProductivity.`);
             return true;
         }
 
+        const transaction = await sequelize.transaction();
         await UserProductivityCalculations.create({
             roiId,
             Date: yearDate,
@@ -158,9 +211,13 @@ const userProductivityCalculations = async (roiId,  yearDate, waitTimeHrs, costP
             costPerAnnum:costPerAnnum,
             costPerAnnumAlluvio: costPerAnnumAlluvino,
             savingsPerAnnum: costPerAnnum-costPerAnnumAlluvino
-        });
+        },{transaction});
+
+        await transaction.commit();
         return true;
+
     } catch (error) {
+        await transaction.rollback();
         console.error('Error creating CalculationDeviceRefresh:', error);
         return false;
     }
@@ -178,26 +235,41 @@ const calculation = async (req, res) => {
         ]);
 
         const Year = new Date(licenceDetails.date);
+        const totalTerm = addDate(Year, { months: Number(licenceDetails.licenceTerm)})
+        
+        const reftreshterm =addDate(Year, { months:Number(prodAddPhase.deviceRefresh) })
+        const desktopTerm =addDate(Year, { months:Number(prodAddPhase.deskSupport) })
+        const licenceTerm = addDate(Year, { months:Number(prodAddPhase.softwareLicence) })
+        const userProductivityTerm = addDate(Year, { months: Number(prodAddPhase.userProductivity)})
+
+        const diffDesktop = (totalTerm.getFullYear() - desktopTerm.getFullYear())+1;
+        const diffreftreshterm = (totalTerm.getFullYear() - reftreshterm.getFullYear())+1;
+        const diffsoftwareLicence = (totalTerm.getFullYear() - licenceTerm.getFullYear())+1;
+        const diffuserProductivity = (totalTerm.getFullYear() - userProductivityTerm.getFullYear())+1;
 
         const yearCalc = {
-            Desktop: {
-                year1: addDate(Year, { months: Number(prodAddPhase.deskSupport) }),
-                year2: addDate(Year, { months: Number(prodAddPhase.deskSupport), years: 1 })
-            },
-            Refresh: {
-                year1: addDate(Year, { months: Number(prodAddPhase.deviceRefresh) }),
-                year2: addDate(Year, { months: Number(prodAddPhase.deviceRefresh), years: 1 }),
-                year3: addDate(Year, { months: Number(prodAddPhase.deviceRefresh), years: 2 }),
-                year4: addDate(Year, { months: Number(prodAddPhase.deviceRefresh), years: 3 }),
-                year5: addDate(Year, { months: Number(prodAddPhase.deviceRefresh), years: 4 })
-            },
-            softwareLicence:{
-                year: addDate(Year, { months: Number(prodAddPhase.softwareLicence) }),
-            },
-            userProductivity:{
-                year: addDate(Year, { months: Number(prodAddPhase.userProductivity) }),
-            }
+            Desktop: {},
+            Refresh:{},
+            softwareLicence:{},
+            userProductivity:{}
         };
+        
+        for (let i = 1; i <= diffDesktop; i++) {
+            yearCalc.Desktop[`year${i}`] = addDate(Year, { months: Number(prodAddPhase.deskSupport), years: i - 1 });
+        }
+
+        for (let i = 1; i <= diffreftreshterm; i++) {
+            yearCalc.Refresh[`year${i}`] = addDate(Year, { months: Number(prodAddPhase.deviceRefresh), years: i - 1 });
+        }
+
+        for (let i = 1; i <= diffsoftwareLicence; i++) {
+            yearCalc.softwareLicence[`year${i}`] = addDate(Year, { months: Number(prodAddPhase.softwareLicence), years: i - 1 });
+        }
+
+        for (let i = 1; i <= diffuserProductivity; i++) {
+            yearCalc.userProductivity[`year${i}`] = addDate(Year, { months: Number(prodAddPhase.userProductivity), years: i - 1 });
+        }
+
 
         const reductionFact = {
             mttr: {
@@ -239,28 +311,31 @@ const calculation = async (req, res) => {
         const costPerL3Ticket = Number(prodAddEnv.l3TicketCost);
         const level3 = 3;
 
-        const desktopTasks = createDesktopTasks([level, level2, level3], yearCalc.Desktop, [NoOfL1Tickets, NoOfL2Tickets, NoOfL3Tickets], [costPerL1Ticket, costPerL2Ticket, costPerL3Ticket], reductionFact.desktopSupport);
+        const desktopTasks = createDesktopTasks([level, level2, level3], yearCalc, [NoOfL1Tickets, NoOfL2Tickets, NoOfL3Tickets], [costPerL1Ticket, costPerL2Ticket, costPerL3Ticket], reductionFact.desktopSupport);
 
         // For Device Refresh
         const noOfDevices = Number(prodAddEnv.hardwareRefresh) * (12 - phase.deviceRefresh) / 12;
         const costPerDevice = Number(prodAddEnv.cost);
         const cycle = 4;
         const  totalEPs = licenceDetails.eps
-        //const refreshTasks = createDeviceRefreshTasks(yearCalc.Refresh, cycle, totalEPs,costPerDevice, reductionFact.refresh.eachYear);
-        const refreshTasks = createDeviceRefreshTasks(yearCalc.Refresh, noOfDevices, costPerDevice, reductionFact.refresh.eachYear,cycle, totalEPs);
+        const refreshTasks = createDeviceRefreshTasks(yearCalc, noOfDevices, costPerDevice, reductionFact.refresh.eachYear,cycle, totalEPs);
     
         //For User Productivity
-        const waitTime = (250*(12 - phase.userProductivity)*(licenceDetails.employees)*(prodAddEnv.avgTimeSpent)*(prodAddEnv.waitTime))/10000
+        const waitTime = (250*(12 - phase.userProductivity)*(licenceDetails.employees)*(prodAddEnv.avgTimeSpent)*(prodAddEnv.waitTime))/10000;
+        const userProductivityTasks = createUserProductivityTasks(yearCalc,waitTime,prodAddEnv.hourlyPrice,reductionFact.waitTime.eachYear) ;
+
+         //for Software Licence
+        const licenceCalculationTasks = createLicenceCalculationTasks(yearCalc, licenceDetails.employees, prodAddEnv.costPerUser, reductionFact.software.eachYear)
 
         //Executing all tasks concurrently
         const [desktopResults, refreshResults, licenceResult, userProductivityResult] = await Promise.all([
             Promise.all(desktopTasks.map(task => deskSupportCalculations(roiId, task))),
             Promise.all(refreshTasks.map(task => deviceRefreshCalculations(roiId, task))),
-            licenceCalculations(roiId,  yearCalc.softwareLicence.year, licenceDetails.employees, prodAddEnv.costPerUser, reductionFact.software.eachYear ),
-            userProductivityCalculations(roiId,yearCalc.userProductivity.year,waitTime,prodAddEnv.hourlyPrice,reductionFact.waitTime.eachYear)
+            Promise.all(licenceCalculationTasks.map(task => licenceCalculations(roiId, task))),
+            Promise.all(userProductivityTasks.map(task => userProductivityCalculations(roiId, task))),
         ]);
 
-        const allSuccessful = [...desktopResults, ...refreshResults, licenceResult, userProductivityResult].every(result => result);
+         const allSuccessful = [...desktopResults, ...refreshResults, ...licenceResult, ...userProductivityResult].every(result => result);
 
         if (allSuccessful) {
             return res.status(200).json({ message: 'Calculations Details updated successfully' });
@@ -273,6 +348,7 @@ const calculation = async (req, res) => {
     }
 };
 
+
 function filterByConditions(array, conditions) {
     return array.filter(item => Object.keys(conditions).every(key => item[key] === conditions[key]));
 }
@@ -282,26 +358,6 @@ function sortByDate(array) {
     return array.sort((a, b) => new Date(a.date) - new Date(b.date));
 }
 
-
-function mapAndSortData(data, level, fields) {
-    return sortByDate(filterByConditions(data, { level }).map(item => {
-        let mappedItem = { date: item.Date };
-        fields.forEach(field => {
-            mappedItem[field.key] = item[field.value];
-        });
-        return mappedItem;
-    }));
-}
-
-function mapDeviceData(data, fields) {
-    return sortByDate(data.map(item => {
-        let mappedItem = { date: item.Date };
-        fields.forEach(field => {
-            mappedItem[field.key] = item[field.value];
-        });
-        return mappedItem;
-    }));
-}
 
 const getCalculations = async (req, res) => {
     try {
@@ -349,7 +405,7 @@ const getCalculations = async (req, res) => {
                 waitTimeHrs: item.waitTimeHrs,
                 costPerHour: item.costPerHour,
                 costPerAnnum: item.costPerAnnum
-                }))),
+            }))),
         };
         const withAlluvio = {
             L1DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 1 }).map(item => ({
@@ -417,8 +473,6 @@ const getCalculations = async (req, res) => {
                 }))),
         };
 
-
-
         return res.json({withAlluvio:withAlluvio,withoutAlluvio,savings:savings});
     } catch (error) {
         console.log(error)
@@ -426,6 +480,83 @@ const getCalculations = async (req, res) => {
     }
 }
 
+const calculationTimeline = async(req,res)=>{
+    try {
+        const{roiId} = req.body;
+        const [deskSupport, deviceRefresh, licence, userProductivity,productPhase] = await Promise.all([
+            CalculationDesktopSupport.findAll({ where: { roiId },attributes: ['Date','level','savingsPerAnnum'] }),
+            CalculationDeviceRefresh.findAll({ where: { roiId },attributes: ['Date','savingsPerAnnum'] }),
+            CalculationLicence.findAll({ where: { roiId },attributes: ['Date','savingsPerAnnum'] }),
+            CalcUserProductivity.findAll({ where: { roiId },attributes: ['Date','savingsPerAnnum']  }),
+            ProductPhase.findOne({ where: { roiId } })
+        ]);
+
+        //for Desktop Support
+        const yearObject = sortByDate(deskSupport.map(item => ({
+             date: item.Date,
+             savingsPerAnnum: item.savingsPerAnnum,
+             level: item.level
+        })))
+
+        await timelineDesktopSupport(roiId,yearObject,'desktopSupport',productPhase.deskSupport)
+        
+        return res.status(200).json(yearObject)
+
+    } catch (error) {
+        
+    }
+
+}
+
+function extractMonth(dateStr) {
+    const date = new Date(dateStr);
+    return date.getMonth() + 1;
+}
 
 
-module.exports = { calculation,getCalculations };
+
+function calcvalue(year,phase){
+    const month = Number(extractMonth(year))
+    return ((12+Number(phase))-month * year.savingsPerAnnum)/12
+}
+
+async function timelineDesktopSupport(roiId,yearObj,parameter,phase){
+
+    try {
+        await Timeline.create({
+            roiId,
+            parameter:`L${yearObj[0].level}Support`,
+            Year0:{
+                year:yearObj[0].date,
+                value:calcvalue(yearObj[0],phase)
+            } ,
+            Year1:{
+                year:yearObj[1].date,
+                value:calcvalue(yearObj[1],phase)
+            },
+            Year2:{
+                year:yearObj[2].date,
+                value:calcvalue(yearObj[2],phase)
+            },
+            Year3:{
+                year:yearObj[3].date,
+                value:calcvalue(yearObj[3],phase)
+            },
+            Year4:{
+                year:yearObj[4].date,
+                value:calcvalue(yearObj[4],phase)
+            },
+            Year5:{
+                year:yearObj[5].date,
+                value:calcvalue(yearObj[5],phase)
+            }
+            
+        });
+    } catch (error) {
+        
+    }
+
+}
+
+
+module.exports = { calculation,getCalculations,calculationTimeline };
