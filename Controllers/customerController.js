@@ -16,58 +16,53 @@ const create = async (req, res) => {
 
     const transaction = await sequelize.transaction();
     try {
-        let existingCustomer = await Customer.findOne({ where: { name }, transaction });
+        const values = {
+            employees,
+            eps: employees * eps,
+            date,
+            licenceTerm,
+            licencePrice,
+            addonPrice,
+            impleandTraining,
+            residentPs
+        };
+
+        const existingCustomer = await Customer.findOne({ where: { name }, transaction });
+        let roiId;
+
         if (existingCustomer) {
             await existingCustomer.update({ name, contactName }, { transaction });
             const existingRoi = await Roi.findOne({ where: { custId: existingCustomer.custId }, transaction });
             const roi = await existingRoi.update({ name: roiName, custId: existingCustomer.custId }, { transaction });
-            await Licence.update({
-                custId: existingCustomer.custId,
-                roiId: roi.id,
-                employees,
-                eps: employees * eps,
-                date,
-                licenceTerm,
-                licencePrice,
-                addonPrice,
-                impleandTraining,
-                residentPs
-            }, { where: { custId: existingCustomer.custId }, transaction });
+            roiId = roi.id;
+
+            await Licence.update({ ...values, custId: existingCustomer.custId, roiId: roi.id }, { where: { custId: existingCustomer.custId }, transaction });
+
             await Promise.all([
-              CalculationDesktopSupport.destroy({ where: { roiId:roi.id }, transaction }),
-              CalculationDeviceRefresh.destroy({ where: { roiId:roi.id }, transaction }),
-              LicenceCalculations.destroy({ where: { roiId:roi.id }, transaction }),
-              UserProductivityCalculations.destroy({ where: { roiId:roi.id }, transaction })
-          ]);
-            await transaction.commit();
+                CalculationDesktopSupport.destroy({ where: { roiId }, transaction }),
+                CalculationDeviceRefresh.destroy({ where: { roiId }, transaction }),
+                LicenceCalculations.destroy({ where: { roiId }, transaction }),
+                UserProductivityCalculations.destroy({ where: { roiId }, transaction })
+            ]);
+
             log.info('Customer info updated successfully.');
-            return res.status(200).json({ message: 'Customer info Updated',roiId: existingRoi.id });
         } else {
             const customer = await Customer.create({ name, contactName }, { transaction });
             const roi = await Roi.create({ name: roiName, custId: customer.custId }, { transaction });
-            await Licence.create({
-                custId: customer.custId,
-                roiId: roi.id,
-                employees,
-                eps: employees * eps,
-                date,
-                licenceTerm,
-                licencePrice,
-                addonPrice,
-                impleandTraining,
-                residentPs
-            }, { transaction });
+            roiId = roi.id;
+            await Licence.create({ ...values, custId: customer.custId, roiId: roi.id }, { transaction });
 
-            await transaction.commit();
             log.info('Customer information successfully saved.');
-            return res.status(200).json({ message: 'Customer information successfully saved', roiId: roi.id });
         }
+        await transaction.commit();
+        return res.status(200).json({ message: 'Customer information processed successfully', roiId });
     } catch (error) {
         await transaction.rollback();
         log.error('Error creating/updating Customer:', error);
         return res.status(500).json({ message: 'Internal Server Error' });
     }
 };
+
 
 module.exports = {
     create
