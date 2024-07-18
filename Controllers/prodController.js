@@ -2,6 +2,7 @@ const ProductEnvDetails = require('../Models/productEnvdetailsModel')
 const ProductAdditionals = require('../Models/productAdditionals')
 const ProductPhase = require('../Models/productPhaseModel')
 const {sequelize} = require('../dbConfig');
+const log = require('../utils/logger');
 
 const addProductEnvDetails = async (req, res) => {
     const { roiId, l1TicketCost, l2TicketCost, l3TicketCost, noOfL1Tickets, noOfL2Tickets, noOfL3Tickets, percentDeskSupportTicket, cost, hardwareRefresh, costPerUser, waitTime, avgTimeSpent, hourlyPrice } = req.body;
@@ -27,7 +28,7 @@ const addProductEnvDetails = async (req, res) => {
 
             await transaction.commit();
             console.log('ProductEnvDetails updated');
-            
+
             return res.status(200).json({ message: 'Environment information successfully updated' });
         } else {
             const newDetails = await ProductEnvDetails.create({
@@ -47,13 +48,13 @@ const addProductEnvDetails = async (req, res) => {
                 hourlyPrice: hourlyPrice
             },{ transaction });
             await transaction.commit();
-            console.log('Environment information successfully saved');
+            log.info('Environment information successfully saved');
             return res.status(200).json({ message: 'Environment information successfully saved' });
         }
     } catch (error) {
+        log.error('Error creating/updating ProductEnvDetails: \n', error);
         await transaction.rollback();
-        console.error('Error creating/updating ProductEnvDetails:', error);
-        return res.status(500).json({ error: 'Error creating/updating Environment information' });
+        return res.status(500).json({ error: 'Internal server error' });
     }
 };
 
@@ -71,7 +72,7 @@ const addProductAddidtionals = async (req, res) => {
                 waitTime: waitTime
             },{transaction});
             await transaction.commit();
-            console.log('ProductAdditionalDetails updated');
+            log.info('Additional information successfully updated');
             return res.status(200).json({ message: 'ProductAdditionalDetails updated successfully' });
         } else {
             const newDetails = await ProductAdditionals.create({
@@ -83,13 +84,13 @@ const addProductAddidtionals = async (req, res) => {
                 waitTime: waitTime
             },{ transaction });
             await transaction.commit();
-            console.log('Additional information successfully saved');
+            log.info('Additional information successfully saved');
             return res.status(200).json({ message: 'Additional information successfully saved' });
         }
     } catch (error) {
+        log.error('Error creating/updating ProductAdditionalDetails: \n', error);
         await transaction.rollback();
-        console.error('Error creating/updating ProductAdditionalDetails:', error);
-        return res.status(500).json({ error: 'Error creating/updating Additional information' });
+        return res.status(500).json({ error: 'Internal server error' });
     }
 };
 
@@ -106,7 +107,7 @@ const addProductPhaseDetails = async (req, res) => {
                 userProductivity: userProductivity
             },{transaction});
             await transaction.commit();
-            console.log('ProductPhaseDetails updated');
+            log.info('Phase delivery successfully saved');
             return res.status(200).json({ message: 'ProductPhaseDetails updated successfully' });
         } else {
             const newDetails = await ProductPhase.create({
@@ -117,13 +118,13 @@ const addProductPhaseDetails = async (req, res) => {
                 userProductivity: userProductivity
             },{transaction});
             await transaction.commit();
-            console.log('Phase delivery successfully saved');
+            log.info('Phase delivery successfully saved');
             return res.status(200).json({ message: 'Phase delivery successfully saved' });
         }
     } catch (error) {
+        log.error('Error creating/updating ProductPhaseDetails: \n', error);
         await transaction.rollback();
-        console.error('Error creating/updating ProductPhaseDetails:', error);
-        return res.status(500).json({ error: 'Error creating/updating Phase delivery' });
+        return res.status(500).json({ error: 'Internal server error' });
     }
 };
 

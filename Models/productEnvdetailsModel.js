@@ -60,7 +60,7 @@ const ProductEnvDetails = sequelize.define('ProductEnvDetails', {
   }
 }, {
   tableName: 'productEnvDetails', 
-  timestamps: false
+  timestamps: true
 });
 
 // Define associations

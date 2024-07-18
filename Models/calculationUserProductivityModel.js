@@ -1,7 +1,8 @@
 // models/CalculationDesktopSupport.js
 
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../dbConfig'); // Adjust the path as per your configuration
+const { sequelize } = require('../dbConfig');
+const ROI = require('../Models/roiModel');
 
 const CalcUserProductivity = sequelize.define('CalcUserProductivity', {
   id: {
@@ -15,7 +16,11 @@ const CalcUserProductivity = sequelize.define('CalcUserProductivity', {
   },
   roiId: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    references: {
+      model: 'roi',
+      key: 'id'
+    }
   },
   Date: {
     type: DataTypes.DATEONLY,
@@ -51,8 +56,17 @@ const CalcUserProductivity = sequelize.define('CalcUserProductivity', {
   },
 }, {
   // Other options
-  timestamps: false, // Disable timestamps (createdAt, updatedAt)
-  tableName: 'calcUserProductivity' // Specify table name if different from model name
+  timestamps: true, // Disable timestamps (createdAt, updatedAt)
+  tableName: 'calcUserProductivity',
+  indexes: [
+    {
+      unique: true,
+      fields: ['roiId', 'Date']
+    }
+  ]
 });
+
+CalcUserProductivity.belongsTo(ROI, { foreignKey: 'roiId' });
+
 
 module.exports = CalcUserProductivity;

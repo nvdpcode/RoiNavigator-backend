@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../dbConfig'); // Adjust the path as per your configuration
 
-const CalculationTimeline = sequelize.define('CalculationTimeline', {
+const RoiBenefits = sequelize.define('RoiBenefits', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -46,20 +46,12 @@ const CalculationTimeline = sequelize.define('CalculationTimeline', {
   Year5: {
     type: DataTypes.JSON,
     allowNull: true
-  },
-  level: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
-  value: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    defaultValue:null
-  },
+  }
 }, {
   // Other options
   timestamps: true, // Disable timestamps (createdAt, updatedAt)
-  tableName: 'calculationTimeline' // Specify table name if different from model name
+  tableName: 'roiBenefits' // Specify table name if different from model name
 });
 
-module.exports = CalculationTimeline;
+RoiBenefits.belongsTo(ROI, { foreignKey: 'roiId' });
+module.exports = RoiBenefits;

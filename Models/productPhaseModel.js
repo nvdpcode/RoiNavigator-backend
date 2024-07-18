@@ -37,7 +37,7 @@ const productPhaseDetails = sequelize.define('productPhaseDetails', {
     }
 }, {
     tableName: 'productPhaseDetails', // Optional: Define the table name explicitly
-    timestamps: false // Optional: Disable timestamps if you're managing created_at in the model
+    timestamps: true // Optional: Disable timestamps if you're managing created_at in the model
 });
 
 // Define associations

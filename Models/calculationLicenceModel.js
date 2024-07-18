@@ -2,6 +2,7 @@
 
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../dbConfig'); // Adjust the path as per your configuration
+const ROI = require('../Models/roiModel');
 
 const CalculationLicence = sequelize.define('CalculationLicence', {
   id: {
@@ -15,7 +16,11 @@ const CalculationLicence = sequelize.define('CalculationLicence', {
   },
   roiId: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    references: {
+      model: 'roi',
+      key: 'id'
+    }
   },
   Date: {
     type: DataTypes.DATEONLY,
@@ -47,8 +52,16 @@ const CalculationLicence = sequelize.define('CalculationLicence', {
   },
 }, {
   // Other options
-  timestamps: false, // Disable timestamps (createdAt, updatedAt)
-  tableName: 'calculationLicence' // Specify table name if different from model name
+  timestamps: true,
+  tableName: 'calculationLicence',
+  indexes: [
+    {
+      unique: true,
+      fields: ['roiId', 'Date']
+    }
+  ]
 });
+
+CalculationLicence.belongsTo(ROI, { foreignKey: 'roiId' });
 
 module.exports = CalculationLicence;

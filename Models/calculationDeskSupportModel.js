@@ -1,7 +1,8 @@
 // models/CalculationDesktopSupport.js
 
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../dbConfig'); // Adjust the path as per your configuration
+const { sequelize } = require('../dbConfig');
+const ROI = require('../Models/roiModel');
 
 const CalculationDesktopSupport = sequelize.define('CalculationDesktopSupport', {
   id: {
@@ -15,7 +16,11 @@ const CalculationDesktopSupport = sequelize.define('CalculationDesktopSupport', 
   },
   roiId: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    references: {
+      model: 'roi',
+      key: 'id'
+    }
   },
   Date: {
     type: DataTypes.DATEONLY,
@@ -55,8 +60,17 @@ const CalculationDesktopSupport = sequelize.define('CalculationDesktopSupport', 
   }
 }, {
   // Other options
-  timestamps: false, // Disable timestamps (createdAt, updatedAt)
-  tableName: 'calculationDesktopSupport' // Specify table name if different from model name
+  timestamps: true,
+  tableName: 'calculationDesktopSupport',
+  indexes: [
+    {
+      unique: true,
+      fields: ['Date', 'level']
+    }
+  ]
+  // Specify table name if different from model name
 });
+
+CalculationDesktopSupport.belongsTo(ROI, { foreignKey: 'roiId' });
 
 module.exports = CalculationDesktopSupport;

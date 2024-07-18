@@ -21,9 +21,13 @@ const ROI = sequelize.define('roi', {
       model: 'customer',
       key: 'custId'
     }
+  },
+  status:{
+    type: DataTypes.BOOLEAN,
+    defaultValue:false
   }
 }, {
-  timestamps: false, // Disable timestamps (createdAt, updatedAt)
+  timestamps: true, // Disable timestamps (createdAt, updatedAt)
   tableName: 'roi' // Specify table name if different from model name
 });
 
