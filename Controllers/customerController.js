@@ -3,6 +3,10 @@ const Customer = require('../Models/customerModel');
 const Roi = require('../Models/roiModel');
 const Licence = require('../Models/licenceDetailsModel');
 const log = require('../utils/logger');
+const CalculationDesktopSupport = require("../Models/calculationDeskSupportModel");
+const CalculationDeviceRefresh = require("../Models/calculationDeviceRefreshModel");
+const LicenceCalculations = require("../Models/calculationLicenceModel");
+const UserProductivityCalculations = require("../Models/calculationUserProductivityModel");
 
 const create = async (req, res) => {
     const {
@@ -29,7 +33,12 @@ const create = async (req, res) => {
                 impleandTraining,
                 residentPs
             }, { where: { custId: existingCustomer.custId }, transaction });
-
+            await Promise.all([
+              CalculationDesktopSupport.destroy({ where: { roiId:roi.id }, transaction }),
+              CalculationDeviceRefresh.destroy({ where: { roiId:roi.id }, transaction }),
+              LicenceCalculations.destroy({ where: { roiId:roi.id }, transaction }),
+              UserProductivityCalculations.destroy({ where: { roiId:roi.id }, transaction })
+          ]);
             await transaction.commit();
             log.info('Customer info updated successfully.');
             return res.status(200).json({ message: 'Customer info Updated',roiId: existingRoi.id });

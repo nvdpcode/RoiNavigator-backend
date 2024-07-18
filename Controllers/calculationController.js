@@ -281,7 +281,7 @@ const calculation = async (req, res) => {
         ]);
 
         if (!prodAddDetails || !prodAddEnv || !prodAddPhase || !licenceDetails) {
-            return res.status(404).json({ message:'Roi not found' });
+            return res.status(200).json({ message:'Roi not found' });
         }
 
         const Year = new Date(licenceDetails.date);
