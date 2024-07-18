@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const {sequelize} = require('./dbConfig')
+const cors = require('cors');
 
 //Import Routers
 const configRouter = require('./Routes/configRoute')
@@ -8,6 +9,7 @@ const userRouter = require('./Routes/userRoute')
 const customerRouter = require('./Routes/customerRoute')
 const productRouter = require('./Routes/productRoute')
 
+app.use(cors())
 app.use(express.json());
 
 //Set up Routers
@@ -27,8 +29,8 @@ async function connectToDb() {
   try {
     await sequelize.authenticate();
     console.log('Database Connected');
-    //await sequelize.sync({ force: false });
-    //console.log('Database synchronized');
+    await sequelize.sync({ force: false });
+    console.log('Database synchronized');
   } catch (error) {
     console.error('Error Connecting/Syncing Database:', error);
   }

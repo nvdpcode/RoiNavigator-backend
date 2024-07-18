@@ -32,7 +32,7 @@ const create = async (req, res) => {
 
             await transaction.commit();
             log.info('Customer info updated successfully.');
-            return res.status(200).json({ message: 'Customer info Updated' });
+            return res.status(200).json({ message: 'Customer info Updated',roiId: existingRoi.id });
         } else {
             const customer = await Customer.create({ name, contactName }, { transaction });
             const roi = await Roi.create({ name: roiName, custId: customer.custId }, { transaction });
