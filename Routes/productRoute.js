@@ -12,6 +12,7 @@ router.post('/calculation',calculationController.calculation)
 router.post('/calcDetails',calculationController.getCalculations)
 router.post('/calcTimeline',timelineController.calculationTimeline)
 router.post('/roi',timelineController.roiBenefits)
+router.post('/getRoi',timelineController.getRoi)
 
 
 module.exports = router

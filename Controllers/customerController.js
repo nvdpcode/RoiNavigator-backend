@@ -7,6 +7,8 @@ const CalculationDesktopSupport = require("../Models/calculationDeskSupportModel
 const CalculationDeviceRefresh = require("../Models/calculationDeviceRefreshModel");
 const LicenceCalculations = require("../Models/calculationLicenceModel");
 const UserProductivityCalculations = require("../Models/calculationUserProductivityModel");
+const Timeline = require("../Models/timelineModel")
+const RoiBenefits = require("../Models/roiBenefitsModel")
 
 const create = async (req, res) => {
     const {
@@ -42,7 +44,9 @@ const create = async (req, res) => {
                 CalculationDesktopSupport.destroy({ where: { roiId }, transaction }),
                 CalculationDeviceRefresh.destroy({ where: { roiId }, transaction }),
                 LicenceCalculations.destroy({ where: { roiId }, transaction }),
-                UserProductivityCalculations.destroy({ where: { roiId }, transaction })
+                UserProductivityCalculations.destroy({ where: { roiId }, transaction }),
+                Timeline.destroy({ where: { roiId }, transaction }),
+                RoiBenefits.destroy({where:{roiId}, transaction})
             ]);
 
             log.info('Customer info updated successfully.');

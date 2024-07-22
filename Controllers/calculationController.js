@@ -99,9 +99,10 @@ const deskSupportCalculations = async (roiId, { yearDate, level, noOfTickets, co
     const transaction = await sequelize.transaction();
 
     try {
-        const existingRecord = await CalculationDesktopSupport.findOne({ where: { level, Date:yearDate },transaction });
+        const existingRecord = await CalculationDesktopSupport.findOne({ where: { level, Date:yearDate,roiId },transaction });
+        console.log('existingRecord',existingRecord)
         if (existingRecord) {
-            console.log(`Record with roiId ${roiId} and level ${level} already exists. Updating record.`);
+            console.log(` Desktop Support Record with roiId ${roiId} and level ${level} already exists. Updating record.`);
             await existingRecord.update({
                 noOfTickets,
                 cost: costPerTicket,

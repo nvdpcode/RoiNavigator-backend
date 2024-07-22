@@ -5,6 +5,7 @@ const CalculationDeviceRefresh = require("../Models/calculationDeviceRefreshMode
 const CalculationLicence = require('../Models/calculationLicenceModel');
 const CalcUserProductivity = require('../Models/calculationUserProductivityModel');
 const Timeline = require("../Models/timelineModel")
+const RoiBenefits = require("../Models/roiBenefitsModel")
 const {sequelize} = require('../dbConfig');
 const log = require('../utils/logger');
 
@@ -80,6 +81,7 @@ const calculationTimeline = async(req,res)=>{
 
     } catch (error) {
         console.log(error)
+        return res.status(500).json({message:"Internal Server Error"})    
     }
 
 }
@@ -232,6 +234,7 @@ async function timelineSoftwareLicence(roiId, yearObj, phase, term, startDate) {
         await Timeline.create(timelineData);
     } catch (error) {
         console.log(error);
+        return res.status(500).json({message:"Internal Server Error"})    
     }
 }
 
@@ -328,7 +331,7 @@ async function timelineLicenceandAddon(roiId, startDate,term,cost,param) {
 
         await Timeline.create(timelineData);
     } catch (error) {
-        console.log(error);
+        console.log(error); 
     }
 }
 
@@ -363,11 +366,127 @@ async function timelineImplementationandTraining(roiId, startDate, cost) {
 const roiBenefits = async(req,res)=>{
     const{roiId}=req.body;
     try {
-        const roiTimeline = await Timeline.findAll({'roiId':roiId})
-        return res.json({"roiTimeline":roiTimeline})
+        const roiTimeline = await Timeline.findAll({where: {'roiId':roiId}})
+        const desktopSupport = roiTimeline.filter((elem)=>{
+            return elem.parameter == "L1Support"||elem.parameter == "L2Support"||elem.parameter == "L3Support"
+        })
+        const softwareLicence = roiTimeline.filter((elem)=>{
+            return elem.parameter == "SoftwareLicence"
+        })
+        const userProductivity =  roiTimeline.filter((elem)=>{
+            return elem.parameter == "UserProductivity"
+        })
+        const ImpleAndTraining = roiTimeline.filter((elem)=>{
+            return elem.parameter == "ImplementationandTraining"
+        })
+        const proffesionalServices = roiTimeline.filter((elem)=>{
+            return elem.parameter == "PS"
+        })
+        const licence = roiTimeline.filter((elem)=>{
+            return elem.parameter == 'Licence'
+        })
+        const addOn = roiTimeline.filter((elem)=>{
+            return elem.parameter == 'AddOn'
+        })
+        console.log('desktopSupport.length',desktopSupport.length)
+
+        const [desktopResults, softwarelicence, userproductivity, ImpleandTraining,proffesionalservices,Licence,addon] = await Promise.all([
+            createRoi('SD',roiId, desktopSupport),
+            createRoi('SL',roiId, softwareLicence),
+            createRoi('UP',roiId,userProductivity),
+            createRoi('IT',roiId,ImpleAndTraining),
+            createRoi('PS',roiId,proffesionalServices),
+            createRoi('LC',roiId,licence),
+            createRoi('AO',roiId,addOn),
+        ]);
+
+         const allSuccessful = [desktopResults, softwarelicence, userproductivity, ImpleandTraining,proffesionalservices,Licence,addon].every(result => result);
+
+        if (allSuccessful) {
+            return res.status(200).json({ message: 'ROI created Successfully' });
+        } else {
+            return res.status(500).json({ error: 'Error During Calculations' });
+        }
+
     } catch (error) {
         console.log(error)
+        return res.status(500).json({message:"Internal Server Error"})    
     }
 }
 
-module.exports = { calculationTimeline,roiBenefits }
+const createRoi = async (parameter,roiId, desktopSupport) => {
+    try {
+        const existingROiparameter = await RoiBenefits.findOne({where:{roiId,parameter}})
+        if(existingROiparameter){
+            console.log(`Skipping RoiBenefits for ${parameter}`)
+            return true;
+        }
+        const calculateYearValues = (year) => ({
+            date: desktopSupport[0][year].date,
+            value: desktopSupport.reduce((acc, item) => acc + item[year].value, 0)
+        });
+    
+        const years = ["Year0", "Year1", "Year2", "Year3", "Year4", "Year5"];
+    
+        const roiBenefitsData = years.reduce((acc, year) => {
+            acc[year] = calculateYearValues(year);
+            return acc;
+        }, {});
+    
+        await RoiBenefits.create({
+            roiId,
+            parameter: parameter,
+            ...roiBenefitsData
+        });
+        return true
+    } catch (error) {
+        console.log(error)
+        return false
+    }
+    
+};
+
+const excludeAttributes = (item, attributesToExclude) => {
+    const result = { ...item.dataValues };
+    attributesToExclude.forEach(attr => {
+      delete result[attr];
+    });
+    return result;
+  };
+
+const getRoi = async(req,res)=>{
+    const {roiId} = req.body;
+    try {
+        const roi = await RoiBenefits.findAll({where: {'roiId':roiId}, attributes: {
+            exclude: ['id', 'productId','roiId','createdAt','updatedAt']
+        }})
+        const digitalWorkspaceBenefits = {
+            serviceDesk : roi.filter((elem)=>elem.parameter=='SD').map((elem) => excludeAttributes(elem, ['parameter'])),
+            softwareLicence : roi.filter((elem)=>elem.parameter=='SL').map((elem) => excludeAttributes(elem, ['parameter'])),
+        }
+    
+        const nondigitalWorkspaceBenefits={
+            userProductivity: roi.filter((elem)=>elem.parameter=='UP').map((elem) => excludeAttributes(elem, ['parameter'])),
+        }
+    
+        const oneTimeTechCost = {
+            professionalServices: roi.filter((elem)=>elem.parameter=='IT').map((elem) => excludeAttributes(elem, ['parameter'])),
+        }
+    
+        const ongoingTechCost = {
+            professionalServices: roi.filter((elem)=>elem.parameter=='PS').map((elem) => excludeAttributes(elem, ['parameter'])),
+            licence: roi.filter((elem)=>elem.parameter=='LC').map((elem) => excludeAttributes(elem, ['parameter'])),
+            addOns: roi.filter((elem)=>elem.parameter=='AO').map((elem) => excludeAttributes(elem, ['parameter'])),
+        }
+    
+        return res.status(200).json({digitalWorkspaceBenefits,nondigitalWorkspaceBenefits,oneTimeTechCost,ongoingTechCost})    
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({message:"Internal Server Error"})    
+    
+    }
+   
+}
+
+
+module.exports = { calculationTimeline,roiBenefits,getRoi }

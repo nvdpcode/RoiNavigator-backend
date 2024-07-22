@@ -1,5 +1,7 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../dbConfig'); // Adjust the path as per your configuration
+const { sequelize } = require('../dbConfig'); 
+const ROI = require("../Models/roiModel")
+// Adjust the path as per your configuration
 
 const RoiBenefits = sequelize.define('RoiBenefits', {
   id: {

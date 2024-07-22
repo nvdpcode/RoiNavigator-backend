@@ -65,7 +65,7 @@ const CalculationDesktopSupport = sequelize.define('CalculationDesktopSupport', 
   indexes: [
     {
       unique: true,
-      fields: ['Date', 'level']
+      fields: ['Date', 'level','roiId']
     }
   ]
   // Specify table name if different from model name
