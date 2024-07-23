@@ -1,5 +1,7 @@
+// models/licenceDetailsModel.js
+
 const { DataTypes } = require('sequelize');
-const {sequelize} = require('../dbConfig'); // Adjust the path as per your configuration
+const { sequelize } = require('../dbConfig'); // Adjust the path as per your configuration
 const ROI = require('../Models/roiModel'); 
 const Customer = require('../Models/customerModel'); 
 
@@ -28,33 +30,65 @@ const Licence = sequelize.define('licence', {
         }
     },
     employees: {
-        type: DataTypes.INTEGER
-      },
-      eps: {
-        type: DataTypes.INTEGER
-      },
-      date: {
-        type: DataTypes.DATEONLY // Use DATEONLY for date without time
-      },
-      licenceTerm: {
-        type: DataTypes.INTEGER
-      },
-      licencePrice: {
-        type: DataTypes.FLOAT
-      },
-      addonPrice: {
-        type: DataTypes.FLOAT
-      },
-      impleandTraining: {
-        type: DataTypes.FLOAT
-      },
-      residentPs: {
-        type: DataTypes.FLOAT
-      }
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        validate: {
+            isInt: true,
+            min: 0
+        }
+    },
+    eps: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        validate: {
+            isInt: true,
+            min: 0
+        }
+    },
+    date: {
+        type: DataTypes.DATEONLY, // Use DATEONLY for date without time
+        allowNull: false
+    },
+    licenceTerm: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        validate: {
+            isInt: true,
+            min: 0
+        }
+    },
+    licencePrice: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        validate: {
+            min: 0
+        }
+    },
+    addonPrice: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        validate: {
+            min: 0
+        }
+    },
+    impleandTraining: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        validate: {
+            min: 0
+        }
+    },
+    residentPs: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        validate: {
+            min: 0
+        }
+    }
 }, {
-  // Other options
-  timestamps: true, // Disable timestamps (createdAt, updatedAt)
-  tableName: 'licenceDetails' // Specify table name if different from model name
+    // Other options
+    timestamps: true, // Disable timestamps (createdAt, updatedAt)
+    tableName: 'licenceDetails' // Specify table name if different from model name
 });
 
 Licence.belongsTo(ROI, { foreignKey: 'roiId', onDelete: 'CASCADE' });

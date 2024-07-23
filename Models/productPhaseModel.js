@@ -1,10 +1,10 @@
 // models/productPhaseDetails.js
 
 const { DataTypes } = require('sequelize');
-const {sequelize} = require('../dbConfig'); // Adjust the path as per your configuration
+const { sequelize } = require('../dbConfig'); // Adjust the path as per your configuration
 const ROI = require('./roiModel'); // Adjust path as per your project structure
 
-const productPhaseDetails = sequelize.define('productPhaseDetails', {
+const ProductPhaseDetails = sequelize.define('productPhaseDetails', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -12,7 +12,7 @@ const productPhaseDetails = sequelize.define('productPhaseDetails', {
     },
     productId: {
         type: DataTypes.INTEGER,
-        allowNull: true,
+        allowNull: true
     },
     roiId: {
         type: DataTypes.INTEGER,
@@ -24,16 +24,32 @@ const productPhaseDetails = sequelize.define('productPhaseDetails', {
         }
     },
     deskSupport: {
-        type: DataTypes.FLOAT
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        validate: {
+            min: 0
+        }
     },
     deviceRefresh: {
-        type: DataTypes.FLOAT
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        validate: {
+            min: 0
+        }
     },
     softwareLicence: {
-        type: DataTypes.FLOAT
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        validate: {
+            min: 0
+        }
     },
     userProductivity: {
-        type: DataTypes.FLOAT
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        validate: {
+            min: 0
+        }
     }
 }, {
     tableName: 'productPhaseDetails', // Optional: Define the table name explicitly
@@ -41,6 +57,6 @@ const productPhaseDetails = sequelize.define('productPhaseDetails', {
 });
 
 // Define associations
-productPhaseDetails.belongsTo(ROI, { foreignKey: 'roiId', onDelete: 'CASCADE' });
+ProductPhaseDetails.belongsTo(ROI, { foreignKey: 'roiId', onDelete: 'CASCADE' });
 
-module.exports = productPhaseDetails;
+module.exports = ProductPhaseDetails;

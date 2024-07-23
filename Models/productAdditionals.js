@@ -1,10 +1,10 @@
 // models/productAdditionals.js
 
 const { DataTypes } = require('sequelize');
-const {sequelize} = require('../dbConfig'); // Adjust the path as per your configuration
-const ROI = require('../Models/roiModel'); // Adjust path as per your project structure
+const { sequelize } = require('../dbConfig'); 
+const ROI = require('../Models/roiModel');
 
-const productAdditionals = sequelize.define('productAdditionals', {
+const ProductAdditionals = sequelize.define('productAdditionals', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -19,24 +19,52 @@ const productAdditionals = sequelize.define('productAdditionals', {
         allowNull: false,
         unique: true,
         references: {
-          model: ROI,
-          key: 'id'
+            model: ROI,
+            key: 'id'
         }
     },
     mttr: {
-        type: DataTypes.JSON
+        type: DataTypes.JSON,
+        allowNull: true,
+        validate: {
+            isValidJSON(value) {
+                if (value && typeof value !== 'object') {
+                    throw new Error('MTTR must be a valid JSON object');
+                }
+            }
+        }
     },
     desktopSupportTickets: {
-        type: DataTypes.JSON
+        type: DataTypes.JSON,
+        allowNull: true,
+        validate: {
+            isValidJSON(value) {
+                if (value && typeof value !== 'object') {
+                    throw new Error('Desktop Support Tickets must be a valid JSON object');
+                }
+            }
+        }
     },
     refresh: {
-        type: DataTypes.FLOAT
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        validate: { 
+            min: 0
+        }
     },
     software: {
-        type: DataTypes.FLOAT
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        validate: {
+            min: 0
+        }
     },
     waitTime: {
-        type: DataTypes.FLOAT
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        validate: {
+            min: 0
+        }
     },
 }, {
     tableName: 'productAdditionals', // Optional: Define the table name explicitly
@@ -44,6 +72,6 @@ const productAdditionals = sequelize.define('productAdditionals', {
 });
 
 // Define the association with ROI
-productAdditionals.belongsTo(ROI, { foreignKey: 'roiId', onDelete: 'CASCADE' });
+ProductAdditionals.belongsTo(ROI, { foreignKey: 'roiId', onDelete: 'CASCADE' });
 
-module.exports = productAdditionals;
+module.exports = ProductAdditionals;
