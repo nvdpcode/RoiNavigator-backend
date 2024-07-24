@@ -30,7 +30,7 @@ const Licence = sequelize.define('licence', {
         }
     },
     employees: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.FLOAT,
         allowNull: false,
         validate: {
             isInt: true,
@@ -38,7 +38,7 @@ const Licence = sequelize.define('licence', {
         }
     },
     eps: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.FLOAT,
         allowNull: false,
         validate: {
             isInt: true,

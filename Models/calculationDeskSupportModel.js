@@ -31,7 +31,7 @@ const CalculationDesktopSupport = sequelize.define('CalculationDesktopSupport', 
     allowNull: false
   },
   noOfTickets: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.FLOAT,
     allowNull: false
   },
   cost: {
@@ -43,7 +43,7 @@ const CalculationDesktopSupport = sequelize.define('CalculationDesktopSupport', 
     allowNull: false
   },
   noOfTicketsAlluvino: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.FLOAT,
     allowNull: false
   },
   costAlluvino: {

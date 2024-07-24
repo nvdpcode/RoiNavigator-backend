@@ -362,6 +362,7 @@ const calculation = async (req, res) => {
         const level3 = 3;
 
         const desktopTasks = createDesktopTasks([level, level2, level3], yearCalc, [NoOfL1Tickets, NoOfL2Tickets, NoOfL3Tickets], [costPerL1Ticket, costPerL2Ticket, costPerL3Ticket], reductionFact.desktopSupport,reductionFact.mttr);
+        console.log('desktopTasks',desktopTasks)
 
         // For Device Refresh
         const noOfDevices = Number(prodAddEnv.hardwareRefresh) * (12 - phase.deviceRefresh) / 12;
@@ -426,105 +427,105 @@ const getCalculations = async (req, res) => {
         const withoutAlluvio = {
             L1DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 1 }).map(item => ({
                 date: item.Date,
-                noOfTickets: item.noOfTickets,
-                costPerTicket: item.cost,
-                costPerAnnum: item.costPerAnnum,
+                noOfTickets: Number(item.noOfTickets).toFixed(0),
+                costPerTicket: Number(item.cost).toFixed(2),
+                costPerAnnum: Number(item.costPerAnnum).toFixed(2),
             }))),
             L2DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 2 }).map(item => ({
                 date: item.Date,
-                noOfTickets: item.noOfTickets,
-                costPerTicket: item.cost,
-                costPerAnnum: item.costPerAnnum,
+                noOfTickets: Number(item.noOfTickets).toFixed(0),
+                costPerTicket: Number(item.cost).toFixed(2),
+                costPerAnnum: Number(item.costPerAnnum).toFixed(2),
             }))),
             L3DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 3 }).map(item => ({
                 date: item.Date,
-                noOfTickets: item.noOfTickets,
-                costPerTicket: item.cost,
-                costPerAnnum: item.costPerAnnum,
+                noOfTickets: Number(item.noOfTickets).toFixed(0),
+                costPerTicket: Number(item.cost).toFixed(2),
+                costPerAnnum: Number(item.costPerAnnum).toFixed(2),
             }))),
             DeviceRefresh: sortByDate(deviceRefresh.map(item => ({
                 date: item.Date,
-                noOfDevices: item.noOfDevices,
-                costPerDevice: item.cost,
-                costPerAnnum: item.costPerAnnum,
+                noOfDevices: (item.noOfDevices).toFixed(0),
+                costPerDevice: Number(item.cost).toFixed(2),
+                costPerAnnum: Number(item.costPerAnnum).toFixed(2),
             }))),
             softwareLicence:sortByDate(licence.map(item => ({
                 date: item.Date,
-                noOfUsers: item.noOfUsers,
-                costOfSoftware: item.costOfSoftware,
-                costPerAnnum: item.costPerAnnum
+                noOfUsers: Number(item.noOfUsers).toFixed(0),
+                costOfSoftware: Number(item.costOfSoftware).toFixed(2),
+                costPerAnnum: Number(item.costPerAnnum).toFixed(2)
             }))),
             userProductivity:sortByDate(userProductivity.map(item => ({
                 date: item.Date,
-                waitTimeHrs: item.waitTimeHrs,
-                costPerHour: item.costPerHour,
-                costPerAnnum: item.costPerAnnum
+                waitTimeHrs: Number(item.waitTimeHrs).toFixed(0),
+                costPerHour: Number(item.costPerHour).toFixed(2),
+                costPerAnnum: Number(item.costPerAnnum).toFixed(2)
             }))),
         };
         const withAlluvio = {
             L1DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 1 }).map(item => ({
                 date: item.Date,
-                noOfTickets: item.noOfTicketsAlluvino,
-                costPerTicket: item.costAlluvino,
-                costPerAnnum: item.costPerAnnumAlluvino,
+                noOfTickets: Number(item.noOfTicketsAlluvino).toFixed(0),
+                costPerTicket: Number(item.costAlluvino).toFixed(2),
+                costPerAnnum: Number(item.costPerAnnumAlluvino).toFixed(2),
             }))),
             L2DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 2 }).map(item => ({
                 date: item.Date,
-                noOfTickets: item.noOfTicketsAlluvino,
-                costPerTicket: item.costAlluvino,
-                costPerAnnum: item.costPerAnnumAlluvino,
+                noOfTickets: Number(item.noOfTicketsAlluvino).toFixed(0),
+                costPerTicket: Number(item.costAlluvino).toFixed(2),
+                costPerAnnum: Number(item.costPerAnnumAlluvino).toFixed(2),
             }))),
             L3DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 3 }).map(item => ({
                 date: item.Date,
-                noOfTickets: item.noOfTicketsAlluvino,
-                costPerTicket: item.costAlluvino,
-                costPerAnnum: item.costPerAnnumAlluvino,
+                noOfTickets: Number(item.noOfTicketsAlluvino).toFixed(0),
+                costPerTicket: Number(item.costAlluvino).toFixed(2),
+                costPerAnnum: Number(item.costPerAnnumAlluvino).toFixed(2),
             }))),
             DeviceRefresh: sortByDate(deviceRefresh.map(item => ({
                 date: item.Date,
-                noOfDevices: item.noOfDevicesAlluvino,
-                costPerDevice: item.costAlluvino,
-                costPerAnnum: item.costPerAnnumAlluvino,
+                noOfDevices: Number(item.noOfDevicesAlluvino).toFixed(0),
+                costPerDevice: Number(item.costAlluvino).toFixed(2),
+                costPerAnnum: Number(item.costPerAnnumAlluvino).toFixed(2),
             }))),
             softwareLicence:sortByDate(licence.map(item => ({
                 date: item.Date,
-                noOfUsers: item.noOfUsers,
-                costOfSoftware: item.costOfSoftwareAlluvio,
-                costPerAnnum: item.costPerAnnumAlluvino
+                noOfUsers: Number(item.noOfUsers).toFixed(0),
+                costOfSoftware: Number(item.costOfSoftwareAlluvio).toFixed(2),
+                costPerAnnum: Number(item.costPerAnnumAlluvino).toFixed(2)
             }))),
             userProductivity:sortByDate(userProductivity.map(item => ({
                 date: item.Date,
-                waitTimeHrs: item.waitTimeHrsAlluvio,
-                costPerHour: item.costPerHourAlluvio,
-                costPerAnnum: item.costPerAnnumAlluvio
+                waitTimeHrs: Number(item.waitTimeHrsAlluvio).toFixed(2),
+                costPerHour: Number(item.costPerHourAlluvio).toFixed(2),
+                costPerAnnum: Number(item.costPerAnnumAlluvio).toFixed(2)
             }))),
         };
 
         const savings = {
             L1DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 1 }).map(item => ({
                 date: item.Date,
-                savingsPerAnnum:item.savingsPerAnnum
+                savingsPerAnnum:Number(item.savingsPerAnnum).toFixed(2)
             }))),
             L2DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 2 }).map(item => ({
                 date: item.Date,
-                savingsPerAnnum:item.savingsPerAnnum
+                savingsPerAnnum:Number(item.savingsPerAnnum).toFixed(2)
             }))),
             L3DesktopSupport: sortByDate(filterByConditions(deskSupport, { level: 3 }).map(item => ({
                 date: item.Date,
-                savingsPerAnnum:item.savingsPerAnnum
+                savingsPerAnnum:Number(item.savingsPerAnnum).toFixed(2)
             }))),
             DeviceRefresh: sortByDate(deviceRefresh.map(item => ({
                 date: item.Date,
-                savingsPerAnnum: item.savingsPerAnnum
+                savingsPerAnnum: Number(item.savingsPerAnnum).toFixed(2)
             }))),
             softwareLicence:sortByDate(licence.map(item => ({
                 date: item.Date,
-                savingsPerAnnum: item.savingsPerAnnum
+                savingsPerAnnum: Number(item.savingsPerAnnum).toFixed(2)
             }))),
             userProductivity:sortByDate(userProductivity.map(item => ({
                 date: item.Date,
-                savingsPerAnnum: item.savingsPerAnnum
-                }))),
+                savingsPerAnnum: Number(item.savingsPerAnnum).toFixed(2)
+            }))),
         };
 
         return res.json({withAlluvio:withAlluvio,withoutAlluvio,savings:savings});

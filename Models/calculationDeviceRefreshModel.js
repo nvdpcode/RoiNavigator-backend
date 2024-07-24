@@ -27,7 +27,7 @@ const CalculationDeviceRefresh = sequelize.define('CalculationDeviceRefresh', {
     allowNull: false
   },
   noOfDevices: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.FLOAT,
     allowNull: false
   },
   cost: {
@@ -39,7 +39,7 @@ const CalculationDeviceRefresh = sequelize.define('CalculationDeviceRefresh', {
     allowNull: false
   },
   noOfDevicesAlluvino: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.FLOAT,
     allowNull: false
   },
   costAlluvino: {

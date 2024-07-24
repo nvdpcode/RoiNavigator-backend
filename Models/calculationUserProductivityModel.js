@@ -27,11 +27,11 @@ const CalcUserProductivity = sequelize.define('CalcUserProductivity', {
     allowNull: false
   },
   waitTimeHrs: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.FLOAT,
     allowNull: false
   },
   waitTimeHrsAlluvio: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.FLOAT,
     allowNull: false
   },
   costPerHour: {
